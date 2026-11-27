@@ -367,7 +367,10 @@ DOE 与质量的实际计算全部走这些包，**不需要移植代码**：
 > Phase 1 前唯一硬阻塞解除。架构确定为**同地址空间 `evalR()`**，
 > **S7（独立 R 进程 + Arrow IPC 隔离验证）取消**。产品可免费提供，但合规靠
 > 「全开源」而非「免费」——见 §7.5。决策依据见 §7.3–§7.5，
-> 合规流水线见 §7.6，**CLA 签署流程已落地见 §7.7**（待律师定稿 + 远端首跑确认）。
+> 合规流水线见 §7.6，**CLA 签署流程已落地见 §7.7**；✅ 2026-11-27 已推送到
+> `radiobeacon-dev/Mimic_JMP`（public），GitHub Actions 首跑
+> `License compliance #1` **success**（详见 §7.7.6）。仍待律师定稿协议占位、
+> 把 `CLA gate` 设为 required check，以及替换 AGPL/GPL 许可证全文。
 
 ### 7.0 概念澄清：这是两件不同的事，但被同一个约束绑在一起
 
@@ -524,8 +527,11 @@ tarball sha256、NOTICES 同步、运行时 `installPackages` / `download.file` 
 - DCF 解析漏掉 `Authors@R` 的 `@`，曾把 igraph 版本号污染成人名列表；已修解析器，
   并新增独立于解析器的 `version` 格式断言防回归（生成与校验共用解析器会互相印证错误）。
 
-**仍待办（不阻塞 Phase 1）**：① ✅ **CLA 签署流程已落地**（见 §7.7，待律师定稿 +
-真实 GitHub 首跑确认）；② 发布前以 AGPL-3.0 全文替换 `LICENSE` 占位并附
+**仍待办（不阻塞 Phase 1）**：① ✅ **CLA 签署流程已落地**（见 §7.7）；
+✅ **2026-11-27 已推送 GitHub 且 Actions 首跑通过**（`License compliance #1`
+success，跑 `--lock-only` 10/10 声明级断言；`CLA gate` 绑定 `pull_request`，
+需首个 PR 才能触发）——仍待律师定稿协议占位、把 `CLA gate` 设为
+required status check；② 发布前以 AGPL-3.0 全文替换 `LICENSE` 占位并附
 GPLv2 / GPLv3 全文；③ 把 `s2_offline.mjs` 的 P1–P4 与 `fetch_extra_packages.mjs`
 合并成由 `packages.lock` 驱动的正式构建脚本；④ 正式发布前请开源合规律师审阅发行包。
 
@@ -610,15 +616,17 @@ CLA 文本 sha256 + 版本升级**实现了等价约束；其 `github-action` li
    （项目维护方法定主体、通知邮箱、管辖法 / 争议解决）。定稿即产生新文本 sha256，
    必须按 §7.7.4 第 3 点走一次完整的版本升级流程（建议升到 v1.1）。
    **定稿前，本流程仅供核心团队内部签署，不对外宣传为正式 CLA。**
-2. 推送到 GitHub 后，在 Settings → Branches 把 **`CLA gate (route A / AGPL-3.0)`**
-   设为 required status check（与 `License compliance` 并列）。
+2. ✅ **仓库已推送**（2026-11-27，`radiobeacon-dev/Mimic_JMP`，public）；
+   在 Settings → Branches 把 **`CLA gate (route A / AGPL-3.0)`**
+   设为 required status check（与 `License compliance` 并列）——这一步需要
+   仓库管理员权限，须在 GitHub 网页手动完成，匿名 API 无法代做。
 3. 核心团队先各自 `npm run cla:sign -- --login ...` 并把 `.cla/signatures.json` 提交，
    避免自己的 PR 被自己的门禁挡住。
 4. 用一个测试 PR 验证：未签 → FAIL 且 job summary 给出签署命令；
    补上签名记录 → PASS。
 5. 之后每次 PR 自动检查；`npm run cla:list` 可随时审计签署名单。
 
-#### 7.7.6 实测结果（本地，零外网）
+#### 7.7.6 实测结果（本地 + 远端首跑）
 
 - 判定逻辑内存自测 **17/17**：正常/异常签署、大小写归一化、bot 豁免、
   重复 / 缺字段 / 未来时间 / 未排序 / 指纹变化 / 旧版本等场景。
@@ -627,10 +635,18 @@ CLA 文本 sha256 + 版本升级**实现了等价约束；其 `github-action` li
   指向 PR 签名表 → 已签 PASS / 未签 FAIL；演练后签名表已恢复为空。
 - 静默改条款演练：C12 FAIL（9/10）→ 还原后 10/10。
 - `npm run verify`：**完整门禁 12/12、CI 模式 10/10、S1/S2/S4/S6 共 39 项全绿**。
+- ✅ **远端首跑（2026-11-27）**：`main` 推送 `355fb20` 后，GitHub Actions 自动触发
+  `License compliance (route A / AGPL-3.0) #1`（push 事件），job
+  `packages.lock and license policy` 的 `Verify license policy and lock internal
+  consistency` 步骤 **success**；两个 workflow 均被识别为 `active`。
+  CI 跑 `--lock-only`（10/10 声明级断言），实物 sha256 / DESCRIPTION 一致性
+  由本地 `npm run verify` 覆盖——这是既定设计，非缺口。
+  **`CLA gate` 绑定 `pull_request` 事件，push 不触发**，仍待第 4 步的测试 PR 验证。
 
 > ⚠️ 本节的协议文本与流程是**工程部署模板，不构成法律意见**；
 > 正式开放外部贡献前须由开源合规律师审阅（§7.4 合规清单第 ④ 项）。
-> GitHub Actions 的真实运行尚未在远端验证，本地只做了静态断言与逻辑自测。
+> 远端已验证 push 触发的许可证门禁；PR 触发的 CLA 门禁尚待测试 PR 与
+> required status check 设置。
 
 ---
 
@@ -708,8 +724,10 @@ CLA 文本 sha256 + 版本升级**实现了等价约束；其 `github-action` li
 8. ✅ **许可证与商业模式 —— 硬阻塞已解除**（见 §7 决策记录）：2026-11-26 定案
    **路线 A（AGPL-3.0-or-later + 先部署 CLA）**，架构确定为同地址空间 `evalR()`，
    **S7 取消**；合规流水线（§7.6）与 **CLA 签署流程（§7.7）** 均已落地。
-   发布前仍须：律师定稿 ICLA/CCLA 第 8/9 节占位、在真实 GitHub 上首跑确认、
-   以 AGPL / GPL 全文替换 `LICENSE` 占位。
+   ✅ **2026-11-27 已推送** `radiobeacon-dev/Mimic_JMP`（public，2 个提交），
+   GitHub Actions 许可证门禁首跑 **success**；`CLA gate` 待首个 PR 验证。
+   发布前仍须：律师定稿 ICLA/CCLA 第 8/9 节占位、把 `CLA gate` 设为
+   required status check、以 AGPL / GPL 全文替换 `LICENSE` 占位。
 
 ---
 
@@ -737,6 +755,8 @@ CLA 文本 sha256 + 版本升级**实现了等价约束；其 `github-action` li
 2. ✅ **许可证与商业模式 —— 已定（2026-11-26）**：采用**路线 A（AGPL-3.0-or-later +
    部署 CLA 保留转 Open-core 权利）**。架构定为同地址空间 `evalR()`，**S7 取消**；
    合规流水线见 §7.6，**CLA 签署流程已落地见 §7.7**，Phase 1 硬阻塞解除。
-   发布前仍须：律师定稿协议占位、远端首跑确认、AGPL / GPL 许可证全文与律师审阅。
+   ✅ **2026-11-27 已推送 GitHub 且许可证门禁首跑 success**。
+   发布前仍须：律师定稿协议占位、把 `CLA gate` 设为 required status check
+   （需管理员在网页操作）、AGPL / GPL 许可证全文与律师审阅。
 3. **目标行业**：默认按半导体/制造业质量工程。如果实际目标是制药（临床/可靠性）或消费品（市场调研），Phase 2/3 的优先级要调整。
 4. **是否要 Web 版**：Tauri 桌面为主，但因为整个栈都是 WASM，**同一套代码几乎零成本能出纯浏览器版**（对应 JMP Live 的分享场景）。这是个很大的加分项，建议 Phase 1 就保持这个可能性。
