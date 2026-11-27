@@ -15,7 +15,8 @@
     "test:selection": "node spike/scripts/test_selection.mjs",
     "test:demo": "node spike/scripts/test_demo_ssr.mjs",
     "verify:s5": "node spike/scripts/s5_linked_brushing.mjs",
-    "verify:all": "npm run typecheck && npm run build && npm run verify:phase0 && npm run test:selection && npm run test:demo && npm run verify:s5"
+    "verify:licenses": "node spike/scripts/license_texts.mjs --check",
+    "verify:all": "npm run typecheck && npm run build && npm run verify:phase0 && npm run test:selection && npm run test:demo && npm run verify:s5 && npm run verify:licenses"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.32.0",

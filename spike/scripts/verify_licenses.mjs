@@ -15,6 +15,7 @@ import {
   LOCK_PATH, NOTICES_PATH, LIB_DIR, LICENSE_PATH, SPIKE_ROOT, POLICY,
 } from './license_policy.mjs';
 import { verifyDeployment, CLA_VERSION } from './cla_policy.mjs';
+import { verifyLicenseTexts } from './license_texts.mjs';
 
 const lockOnly = process.argv.includes('--lock-only');
 const t0 = Date.now();
@@ -186,10 +187,14 @@ if (!c1) {
       ? `${scan.hits.length} 处命中: ${scan.hits.map((h) => `${h.file}:${h.line}`).join(', ')}`
       : `扫描 ${scan.scanned} 个脚本，未发现 installPackages / download.file 等调用`);
 
-  // C11 — 项目许可证声明文件
+  // C11 — 项目 LICENSE 声明 + 三份许可证全文完整性（离线，零外网；两种模式都跑）
   const lic = existsSync(LICENSE_PATH) ? readFileSync(LICENSE_PATH, 'utf8') : '';
-  record('C11 项目 LICENSE 声明存在', /AGPL-3\.0/.test(lic) && /SPDX-License-Identifier/.test(lic),
-    lic ? `${LICENSE_PATH}` : '文件缺失');
+  const licTexts = verifyLicenseTexts();
+  record('C11 项目 LICENSE 声明与许可证全文完整性',
+    /AGPL-3\.0/.test(lic) && /SPDX-License-Identifier/.test(lic) && licTexts.ok,
+    licTexts.ok
+      ? `${LICENSE_PATH} + licenses/ 3 份逐字全文 sha256 校验通过`
+      : licTexts.problems.join('；'));
 
   // C12 — CLA 部署完整性（路线 A 保留转 Open-core 权利的必要条件）
   // 协议文本、版本、签名表结构与指纹、CONTRIBUTING 引用、PR 门禁 workflow、

@@ -150,7 +150,18 @@
 它们**只能作为独立组件分发**，不得静态整合进自有代码；新增任何纯 GPL-2 包都会触发 CI 失败，
 必须先做人工合规复核并显式加入 `packages.lock` 的 `policy.frozenGpl2Only`。
 
+## 许可证全文
+
+发行版随附以下 GNU 官方逐字全文（已入库，来源与 sha256 见 `licenses/SOURCES.md`）：
+
+- `LICENSE` / `licenses/AGPL-3.0.txt` — AGPL-3.0（项目自有代码）
+- `licenses/GPL-3.0.txt` — GPLv3（`gpl3-or-later` / `gpl2-or-gpl3` 组件，按 AGPLv3 §13 组合）
+- `licenses/GPL-2.0.txt` — GPLv2（7 个纯 GPL-2 独立组件）
+
+`node spike/scripts/license_texts.mjs --check` 离线校验三份文本的 sha256 与字节数；
+结果接入 `verify_licenses.mjs` 的 C11 断言，上游文本变更会阻断构建。
+
 ## 免责声明
 
 本清单基于 FSF 官方 FAQ / 许可证列表与随包 `DESCRIPTION`，**不构成法律意见**；
-正式发布前须由开源合规律师审阅，并附 AGPL-3.0 与 GPL 各版本许可证全文。
+正式发布前须由开源合规律师审阅发行包。AGPL-3.0 与 GPLv2 / GPLv3 全文见 `licenses/`。

@@ -528,11 +528,14 @@ tarball sha256、NOTICES 同步、运行时 `installPackages` / `download.file` 
   并新增独立于解析器的 `version` 格式断言防回归（生成与校验共用解析器会互相印证错误）。
 
 **仍待办（不阻塞 Phase 1）**：① ✅ **CLA 签署流程已落地**（见 §7.7）；
-✅ **2026-11-27 已推送 GitHub 且 Actions 首跑通过**（`License compliance #1`
+✅ **2026-11-27 已推送 GitHub 且 Actions 首跑通过**（`License compliance #1/#2`
 success，跑 `--lock-only` 10/10 声明级断言；`CLA gate` 绑定 `pull_request`，
 需首个 PR 才能触发）——仍待律师定稿协议占位、把 `CLA gate` 设为
-required status check；② 发布前以 AGPL-3.0 全文替换 `LICENSE` 占位并附
-GPLv2 / GPLv3 全文；③ 把 `s2_offline.mjs` 的 P1–P4 与 `fetch_extra_packages.mjs`
+required status check（操作手册见 `.cla/README.md` §7 / §8）；
+② ✅ **`LICENSE` 已替换为 AGPL-3.0 逐字全文**（2026-11-27），
+`licenses/` 附 GPLv2 / GPLv3 官方全文并锁定 sha256，`verify_licenses.mjs`
+C11 与 `npm run verify:licenses` 双重校验（见 `docs/DEPENDENCY_LICENSES.md`）；
+③ 把 `s2_offline.mjs` 的 P1–P4 与 `fetch_extra_packages.mjs`
 合并成由 `packages.lock` 驱动的正式构建脚本；④ 正式发布前请开源合规律师审阅发行包。
 
 ---
@@ -727,7 +730,8 @@ CLA 文本 sha256 + 版本升级**实现了等价约束；其 `github-action` li
    ✅ **2026-11-27 已推送** `radiobeacon-dev/Mimic_JMP`（public，2 个提交），
    GitHub Actions 许可证门禁首跑 **success**；`CLA gate` 待首个 PR 验证。
    发布前仍须：律师定稿 ICLA/CCLA 第 8/9 节占位、把 `CLA gate` 设为
-   required status check、以 AGPL / GPL 全文替换 `LICENSE` 占位。
+   required status check（手册见 `.cla/README.md` §7）。
+   ✅ `LICENSE` 已换为 AGPL-3.0 逐字全文并附 GPLv2 / GPLv3 官方全文。
 
 ---
 
