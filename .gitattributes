@@ -1,0 +1,4 @@
+# 统一 LF。packages.lock / THIRD-PARTY-NOTICES.md / CLA 协议文本都有 sha256
+# 或精确字符串断言（verify_licenses.mjs 的 C9 / C12），CRLF 会让门禁误报；
+# 同时保证 GitHub Actions (ubuntu) 与 Windows 本地工作区行为一致。
+* text=auto eol=lf

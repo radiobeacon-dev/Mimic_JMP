@@ -1,0 +1,32 @@
+{
+  "name": "mimic-jmp",
+  "private": true,
+  "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "description": "面向制造业/研发工程师的 DOE + 质量工程交互分析工具（Tauri 2 桌面壳骨架）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "typecheck": "tsc --noEmit",
+    "verify:phase0": "cd spike && npm run verify"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.6",
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.4.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

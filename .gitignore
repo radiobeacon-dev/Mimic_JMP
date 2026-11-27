@@ -1,0 +1,25 @@
+# 依赖与验证产物
+node_modules/
+spike/node_modules/
+spike/results/
+
+# 预置 WASM R 包二进制不入库：构建期按 spike/packages.lock 重新拉取并校验 sha256。
+# 因此 CI 走 --lock-only（校验 lock / NOTICES / 策略 / 源码禁令）；
+# 实物校验（sha256 + DESCRIPTION 一致性）由本地 npm run verify 覆盖。
+spike/local-repo/tgz/
+spike/local-repo/library/
+spike/local-repo/PACKAGES*
+
+# webR 同步 XHR 在 Phase 0 留下的临时内容/锁文件（单个最大 11MB，共约 36MB）
+spike/.node-xmlhttprequest-*
+
+# ---- Tauri 2 / 前端构建产物 ----
+# Cargo.lock 是应用 crate 的可复现构建依据，必须入库，不要忽略。
+dist/
+.vite/
+*.tsbuildinfo
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# 本地工作区记忆/会话数据（非项目交付物，含个人笔记，不入库）
+.workbuddy/

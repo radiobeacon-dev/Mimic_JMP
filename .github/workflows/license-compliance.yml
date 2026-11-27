@@ -1,0 +1,25 @@
+name: License compliance (route A / AGPL-3.0)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  license-gate:
+    name: packages.lock and license policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 纯 Node 内置模块，无需 npm install / 无外网 / 秒级。
+      # 预置 WASM 包二进制（spike/local-repo/{tgz,library}）不入库，故 CI 走 --lock-only：
+      # 校验 lock 内部一致性、许可证分类、纯 GPL-2 冻结白名单、NOTICES 同步、
+      # 运行时联网装包禁令与项目 LICENSE 声明。
+      # 实物校验（sha256 + 随包 DESCRIPTION 一致性）由本地 `npm run verify` 覆盖；
+      # 未来把预置包放进制品库 / Git LFS 后，可去掉 --lock-only 启用完整模式。
+      - name: Verify license policy and lock internal consistency
+        run: node spike/scripts/verify_licenses.mjs --lock-only

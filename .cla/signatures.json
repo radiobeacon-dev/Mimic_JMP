@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "claVersion": "1.0",
+  "signatures": [],
+  "bots": [
+    "dependabot[bot]",
+    "renovate[bot]"
+  ]
+}

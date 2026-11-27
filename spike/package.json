@@ -1,0 +1,31 @@
+{
+  "name": "mimic-jmp-phase0-spike",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase 0 technical validation spike for mimic-JMP. S1: webR boots and runs R under Node/Windows. S2/S3: DOE package chain + design matrices via pre-bundled WASM R packages mounted with NODEFS (zero runtime network). S4: qcc control charts with independent control-limit recomputation. S6: AlgDesign D/I-optimal designs and design-to-model closed loop.",
+  "scripts": {
+    "patch": "node scripts/apply-webr-windows-patch.mjs",
+    "probe:repo": "node scripts/probe_repo.mjs",
+    "probe:api": "node scripts/probe_doe_api.mjs",
+    "fetch:extra": "node scripts/fetch_extra_packages.mjs",
+    "lock:gen": "node scripts/gen_packages_lock.mjs",
+    "lock:check": "node scripts/verify_licenses.mjs",
+    "cla:check": "node scripts/cla_check.mjs",
+    "cla:list": "node scripts/cla_check.mjs --list",
+    "cla:selftest": "node scripts/cla_check.mjs --self-test",
+    "cla:sign": "node scripts/cla_sign.mjs",
+    "s1": "node scripts/s1_webr_boot.mjs",
+    "s2": "node scripts/s2_nodefs.mjs",
+    "s2:fetch": "node scripts/s2_offline.mjs",
+    "s4": "node scripts/s4_qcc.mjs",
+    "s6": "node scripts/s6_algdesign.mjs",
+    "verify": "npm run lock:check && node scripts/s1_webr_boot.mjs && node scripts/s2_nodefs.mjs && node scripts/s4_qcc.mjs && node scripts/s6_algdesign.mjs"
+  },
+  "engines": {
+    "node": ">=17.0.0"
+  },
+  "dependencies": {
+    "webr": "^0.6.1"
+  }
+}

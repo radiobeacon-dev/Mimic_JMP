@@ -1,0 +1,32 @@
+mimic-JMP
+Copyright (C) 2026 mimic-JMP contributors
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License
+for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see https://www.gnu.org/licenses/.
+
+Full license text: https://www.gnu.org/licenses/agpl-3.0.txt
+
+--------------------------------------------------------------------------
+PRE-RELEASE NOTICE
+
+This file is a declaration stub. Before any public distribution:
+  1. Replace it with the complete verbatim AGPL-3.0 text.
+  2. Ship the full license texts of every GPL component listed in
+     spike/THIRD-PARTY-NOTICES.md (GPLv2, GPLv3, AGPLv3).
+  3. Deploy a CLA before accepting external contributions.
+  4. Have an open-source compliance lawyer review the release bundle.
+
+Decision record: docs/DEVELOPMENT_PLAN.md section 7 (route A), section 7.5.
+Compliance gate: node spike/scripts/verify_licenses.mjs

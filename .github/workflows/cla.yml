@@ -1,0 +1,93 @@
+# CLA 门禁（路线 A / AGPL-3.0）—— 贡献者必须签署 ICLA 或 CCLA。
+#
+# 安全设计（重要，改动前请读 .cla/README.md §6）：
+#   * 使用 pull_request 事件而非 pull_request_target：GITHUB_TOKEN 只读、
+#     不接触 secrets、对 fork PR 同样安全。
+#   * 门禁脚本与 CLA 协议文本来自 base checkout（可信），
+#     签名表来自 PR checkout（贡献者可改的那一份）。
+#     否则贡献者可以修改脚本、或同时改 CLA 文本与签名表指纹来伪造签署。
+#   * 不执行 PR 中的任何代码：node 只加载 base/spike/scripts/ 下的脚本，
+#     对 PR 侧仅做 JSON.parse 读取 .cla/signatures.json。
+#
+# 签名记录由贡献者随 PR 提交（见 CONTRIBUTING.md），因此本门禁能读到它。
+
+name: CLA gate (route A / AGPL-3.0)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      login:
+        description: 'GitHub login to verify (optional; defaults to PR author)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cla-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  # 指向 PR checkout 中的签名表；脚本与协议文本仍来自 base checkout。
+  CLA_SIGNATURES_FILE: ${{ github.workspace }}/pr/.cla/signatures.json
+
+jobs:
+  cla:
+    name: verify contributor CLA signature
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout trusted base (gate scripts + agreement texts)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          path: base
+
+      - name: Checkout PR (signature registry)
+        uses: actions/checkout@v4
+        with:
+          path: pr
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate CLA deployment integrity and gate logic
+        working-directory: base
+        run: node spike/scripts/cla_check.mjs --validate
+
+      - name: Check PR author has signed the CLA
+        if: github.event_name == 'pull_request' || inputs.login != ''
+        working-directory: base
+        env:
+          CLA_PR_AUTHOR: ${{ github.event.pull_request.user.login || inputs.login }}
+        run: node spike/scripts/cla_check.mjs --login "$CLA_PR_AUTHOR"
+
+      - name: Write guidance on failure
+        if: failure()
+        run: |
+          {
+            echo "## CLA 门禁未通过"
+            echo ""
+            echo "本项目采用 AGPL-3.0-or-later，首次贡献前必须签署 CLA（不是 DCO）。"
+            echo ""
+            echo "1. 阅读 .cla/ICLA.md（个人）或 .cla/CCLA.md（公司）。"
+            echo "2. 在 PR 分支执行："
+            echo "\`\`\`bash"
+            echo "node spike/scripts/cla_sign.mjs --login <你的GitHub登录名> --name \"姓名\" --email \"you@example.com\" --type individual"
+            echo "\`\`\`"
+            echo "3. 把 .cla/signatures.json 的改动一并提交进本 PR，然后重新触发检查。"
+            echo ""
+            echo "若提示 agreement-mismatch，说明 CLA 文本已变更，需要重新签署。"
+            echo "完整说明见 CONTRIBUTING.md 与 .cla/README.md。"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record pass in job summary
+        if: success()
+        run: |
+          {
+            echo "## CLA 门禁通过"
+            echo "协议版本 v1.0；签名表与 CLA 文本指纹一致，判定逻辑自测全绿。"
+          } >> "$GITHUB_STEP_SUMMARY"
