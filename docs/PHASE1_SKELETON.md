@@ -160,7 +160,81 @@ cargo --config 'source.crates-io.replace-with="rsproxy-sparse"' \
 
 # 桌面运行（装完 MSVC 后，建议用 x64 Native Tools 终端）
 npm run tauri dev
+
+# Phase 1 数据层 / 联动 / 全量回归（不需要 Rust）
+npm run test:selection      # 联动内核 31 项
+npm run test:demo           # 前端演示 SSR 冒烟 7 项
+npm run verify:s5           # 100 万行 S5 基准
+npm run verify:all          # 全流水线（含 Phase 0 回归）
 ```
+
+---
+
+## 9. Phase 1 数据层与 S5 基准（2026-11-27）
+
+### 9.1 为什么缺 MSVC 也能继续
+
+MSVC 只阻塞 Rust 侧的链接（`cargo check` / `tauri dev`）。数据层、联动内核与
+性能基准全部跑在 **Node 22 + DuckDB-Wasm** 上，前端用 Vite 构建与 SSR 冒烟验证，
+因此这部分可以独立推进并给出可复现结论，不占用桌面窗口。
+
+### 9.2 新增代码
+
+| 文件 | 作用 |
+|---|---|
+| `src/lib/selection.ts` | 全局单一 selection store；global / union / intersect；SQL 谓词编译（列名白名单 + 数值校验防注入）、`matchesSelection` 纯 JS 交叉验证、订阅通知 |
+| `src/lib/demoData.ts` · `src/components/LinkedBrushingDemo.tsx` | 可运行联动演示：散点框选 → store → 直方图高亮；三种模式切换；实时显示编译出的 SQL 谓词 |
+| `src/lib/s5Result.ts` | S5 展示值（`spike/results/` 不入库，故固化结论） |
+| `spike/scripts/duckdb-harness.mjs` | DuckDB-Wasm Node 数据层：本机 bundle、instantiate、Arrow 结果物化、按 selection 刷新多视图 |
+| `spike/scripts/test_selection.mjs` | 联动内核单测 31/31 |
+| `spike/scripts/s5_linked_brushing.mjs` | S5 百万行基准，结果写 `spike/results/s5_linked_brushing.json` |
+| `spike/scripts/test_demo_ssr.mjs` | 前端演示 SSR 冒烟 7/7 |
+| `spike/scripts/probe_duckdb_node.mjs` | DuckDB-Wasm Node 入口探针（保留作回归依据） |
+
+### 9.3 依赖与关键 API 结论（实测踩坑）
+
+- 上游 `latest` 指向 **dev 版** `1.33.1-dev57.0`，故固定 `@duckdb/duckdb-wasm@1.32.0`。
+- `package.json` 未列进 exports，不能用 `require.resolve('@duckdb/duckdb-wasm/package.json')`；
+  改用已导出的 `dist/duckdb-mvp.wasm` 子路径反推 dist 目录。
+- **`createDuckDB()` 只构造对象，必须再 `await db.instantiate()`** 才真正加载 WASM；
+  漏掉会报 `Cannot read properties of null (reading 'ccall')`。
+- Node blocking 入口是 `@duckdb/duckdb-wasm/blocking`（`NODE_RUNTIME` + `VoidLogger`），
+  `conn.query()` 同步返回 Arrow Table；BIGINT 需转 Number 才能 JSON 序列化。
+- Node 22 默认支持 TS 类型擦除，`.mjs` 可直接 `import '../../src/lib/selection.ts'`，
+  前端与基准共用同一份实现（前提：不用 enum / namespace / 参数属性 / private 修饰符）。
+- `spike/node_modules` 里另有一份 `react-dom`，SSR 测试必须从项目根用
+  `createRequire(ROOT/package.json)` 解析并配 `resolve.dedupe`，否则双 React 实例
+  触发 `Invalid hook call`。
+
+### 9.4 S5 实测结果（验收线 100ms）
+
+| 指标 | 值 |
+|---|---|
+| 数据集 | 100 万行，温度 / 压力 / 机台 / 良率（含真实相关性） |
+| 引擎 | DuckDB-Wasm 1.32.0，node blocking，零外网 |
+| WASM 实例化 | ~443ms（一次性，不计入交互延迟） |
+| 全链路 p50 / p95 | **35.56 / 49.37 ms**（30 次测量 + 5 次预热） |
+| 视图 | 3 个：温度直方 / 机台均值 / temp-yield 相关系数 |
+| 跨实现一致性 | SQL 谓词命中数 = 纯 JS `matchesSelection` 命中数（575 = 575） |
+| 结论 | **GO 7/7** |
+
+**已知缺口**：精确 `union` 双框选 p50 **141.46ms > 100ms**；
+`intersect` 26.16ms、`global` 34.03ms 正常。原因是 OR 谓词对 100 万行逐行求值，
+外接矩形预筛选（`bbox AND (c1 OR c2)`，语义严格等价）只降到约 143ms，帮助有限。
+
+**对策已验证**：2 单位分箱预聚合立方体（3161 行，构建 35ms）把 union 降到
+**3.46ms**（约 40×），代价是边界 bin 整箱计入导致 9.32% 计数误差（近似路径）。
+这正是 Phase 0 表里给 S5 写的 Plan B「降低联动粒度 / 预聚合」。
+产品层可在大结果集的 union 模式下启用降级；分箱粒度可调。
+
+### 9.5 不要误判为完成
+
+- ❌ 桌面窗口仍未跑起来（缺 MSVC），**WebView2 内的 WASM 性能 / S1 变体 / memory64 未实测**。
+- ❌ Perspective 数据表格、Graph Builder 拖拽、`.mjmp` 读写、Vega-Lite 实际渲染均未做
+  （vega 依赖已装，但本轮只在 Node 侧验证数据链路）。
+- ❌ 预聚合是**近似**路径，尚未接进产品数据层；精确 union 超标仍是待解决项。
+- ✅ `npm run verify:all` 退出码 0：typecheck / build / Phase 0 39 项 + 许可证 12 项
+  + CLA C12 / selection 31 项 / SSR 7 项 / S5 7 项全绿。
 
 ---
 

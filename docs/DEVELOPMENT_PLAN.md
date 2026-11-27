@@ -223,7 +223,7 @@ DOE 与质量的实际计算全部走这些包，**不需要移植代码**：
 | S2 | **DOE 包链路可用** | 预置 WASM 包挂载后 `pb(nruns=12, nfactors=7)` / `FrF2(16,7)` / `rsm::ccd()` 均能出设计矩阵 | **GO** 7/7：PB、FrF2、CCD、L9 正交表全产出 | 自建私有 WASM repo 编译；或 Python `DoEgen`+`pyDOE3` |
 | S3 | **igraph 依赖不炸** | `library(FrF2)` 加载成功，编译型 `igraph.so` / `Matrix.so` 动态库可加载 | **GO**：15/15 包可加载（含两个编译型 `.so`） | patch FrF2 去掉 igraph 路径 |
 | S4 | **qcc 质量链路可用** | 用 `qcc.groups()` 构造分组矩阵（**`qcc()` 的 `sample=` 参数无效**）出 X̄-R 图；控制限用 AIAG/ASTM 公开常数跨语言独立复算比对 | **GO** 13/13：控制限偏差 2.3e-6、Cp/Cpk 偏差 <3.4e-10、WE 判异命中、真实写出 20KB 控制图 PNG | 复用 Python `process-capability-analyzer` |
-| S5 | **联动性能达标** | 100 万行数据，框选后全视图刷新 < 100ms | 未做（需前端可视化层，归入 Phase 1） | 降低联动粒度 / 预聚合 |
+| S5 | **联动性能达标** | 100 万行数据，框选后全视图刷新 < 100ms | **GO（2026-11-27）7/7**：DuckDB-Wasm 1.32.0 / 100 万行 / 3 视图，全链路 p50 35.56ms、p95 49.37ms；SQL 谓词与纯 JS 匹配独立复算一致。**已知缺口**：精确 union 双框选 p50 141.46ms 超标 → 2 单位分箱预聚合降到 3.46ms（边界计数误差 9.32%，近似）。见 `docs/PHASE1_SKELETON.md` §9 | 降低联动粒度 / 预聚合（**已验证可行**） |
 | S6 | `AlgDesign` 可用性（决定 Custom Design 排期） | 能生成 D/I-optimal 设计、处理混合水平+交互、评估设计、并完成「设计→`lm()` 建模」闭环 | **GO** 11/11：I-optimal、256 点候选集、10 个系数全部可估（rank=10/10，R²=0.9978）⇒ **Custom Design 可复用现成算法，无需自研** | Custom Design 推迟到 Phase 3+ |
 | S7 | **架构隔离可行性**（⚠️ **仅当选择商业闭源路线时必做**，见 §7.4） | Tauri sidecar 独立 R 进程 + Arrow IPC 下，Profiler 拖动滑块单次往返 < 16ms（60fps） | 条件项，未做（选路线 A 则不需要） | 隔离不达标 ⇒ 商业闭源路线在技术上不成立，必须回到路线 A/B |
 
@@ -250,6 +250,17 @@ DOE 与质量的实际计算全部走这些包，**不需要移植代码**：
 > `cargo check` / `tauri dev` 的链接阶段失败（已用最小 `rustc` 探针确认），
 > WebView2 下的 S1 变体 / memory64 探测因此尚未实测。
 > 环境实测、目录结构、踩坑与命令速查见 **`docs/PHASE1_SKELETON.md`**。
+>
+> **进度追加（2026-11-27）**：在不依赖 MSVC 的前端 / Node 侧完成了
+> **联动内核 + S5 百万行基准**。`src/lib/selection.ts` 是全局单一数据源
+> （global / union / intersect + SQL 谓词编译 + 纯 JS 交叉验证），
+> `spike/scripts/s5_linked_brushing.mjs` 用 DuckDB-Wasm 1.32.0 实测
+> **GO**：100 万行 / 3 视图，p50 35.56ms、p95 49.37ms（验收线 100ms）；
+> 前端 `LinkedBrushingDemo` 已可运行（SSR 冒烟 7/7）。
+> `npm run verify:all` 全绿。精确 union 多框选仍超 100ms，
+> 已验证「预聚合」对策可降到 3.46ms，代价是边界近似误差 9.32%。
+> 详见 `docs/PHASE1_SKELETON.md` §9 与 `docs/DEPENDENCY_LICENSES.md`。
+> **注意**：S5 是 Node / WASM 侧实测，真实 WebView2 窗口内的性能仍待 MSVC 补齐后验证。
 
 目标：做出「一用就知道是 JMP 那味儿」的东西。只做交互，不做深度统计。
 
@@ -337,7 +348,7 @@ DOE 与质量的实际计算全部走这些包，**不需要移植代码**：
 |---|---|---|---|---|
 | R1 | webR 中 DOE 包链路不可用 | ~~高~~ → **已解除** | 动摇整个技术路线 | **2026-11-26 实测 GO**：33 个预置 WASM 包经 NODEFS 挂载全部可加载（含 igraph/Matrix/AlgDesign 编译型动态库），FrF2/rsm/DoE.base/qcc/AlgDesign 全部可用。见 `docs/PHASE0_SPIKE_REPORT.md` |
 | R2 | WASM 双运行时包体过大、内存吃紧 | **高** | 冷启动慢、大项目崩溃 | 按需懒加载引擎（只做 EDA 时不加载 Pyodide）；包体本地化；DuckDB 承担数据层避免大数据进 R |
-| R3 | WebView2 的 WASM/WebGL 性能不达标 | 中 | 联动卡顿，丢失核心体验 | S1 的 Tauri 变体 + S5 归入 Phase 1 实测；回退 Electron（代价：包体 +150MB）。**2026-11-26**：能力探针已写进骨架前端，但桌面窗口因缺 MSVC Build Tools 未跑通，实测仍待补 |
+| R3 | WebView2 的 WASM/WebGL 性能不达标 | 中 | 联动卡顿，丢失核心体验 | S1 的 Tauri 变体 + S5 归入 Phase 1 实测；回退 Electron（代价：包体 +150MB）。**2026-11-27**：S5 已在 Node / DuckDB-Wasm 侧 GO（p95 49.37ms），证明数据链路不是瓶颈；但桌面窗口因缺 MSVC Build Tools 未跑通，**WebView2 内的 S1 变体 / memory64 实测仍待补** |
 | R4 | `AlgDesign` 不可用 → 没有 Custom Design | ~~中~~ → **已解除** | 缺失 JMP 招牌功能 | **2026-11-26 S6 实测 GO（11/11）**：含 `AlgDesign.so` 的 WASM 二进制可直接挂载；D/I-optimal、混合水平、256 点候选集、建模闭环全通过 ⇒ **无需自研交换算法** |
 | R5 | xgboost/lightgbm 无 WASM 构建 | 中 | ML 能力弱于竞品 | sklearn 的 `GradientBoosting`/`HistGradientBoosting` 已够；或走 Tauri sidecar 跑原生 Python |
 | R6 | **AGPL/GPL 传染** | **高** | 若采用同地址空间耦合又想闭源，被迫开源全部产品，商业模式不成立 | 见 §7。**首选路线 A（AGPL）**彻底规避；若坚持闭源，必须先做 S7 隔离验证 |
@@ -671,11 +682,18 @@ CLA 文本 sha256 + 版本升级**实现了等价约束；其 `github-action` li
      `cargo check` / `tauri dev` 的链接阶段无法完成（已用最小 `rustc` 探针坐实）；
      WebView2 下的 S1 变体 / memory64 探测要等桌面窗口真跑起来
    - 下一步：装 VS Build Tools → `cargo check` → `tauri dev` →
-     DuckDB-Wasm + Perspective + Vega-Lite 数据/可视化层 → S5 百万行联动基准
+     WebView2 内 S1 变体 / memory64 实测 → Perspective 表格 → Graph Builder → `.mjmp` 读写
+   - ✅ **联动内核 + S5 已落地（2026-11-27，不依赖 MSVC）**：
+     `src/lib/selection.ts`（global/union/intersect + 谓词编译 + 纯 JS 交叉验证，单测 31/31）、
+     `spike/scripts/duckdb-harness.mjs`（DuckDB-Wasm 数据层）、
+     `s5_linked_brushing.mjs`（100 万行 / 3 视图，p95 49.37ms，**GO** 7/7）、
+     `LinkedBrushingDemo`（前端可运行，SSR 冒烟 7/7）；`npm run verify:all` 全绿。
+     精确 union 多框选 141.46ms 超标 → 预聚合 3.46ms 的对策已验证（近似，误差 9.32%）
    - 分析编排层：学 jamovi 的两阶段执行（`.init()` 搭骨架 / `.run()` 才重算）；
-     联动状态全局单一数据源
-   - 新增合规待办：432 个 Rust/npm 依赖的许可证尚未登记进第三方声明
-     （当前 `THIRD-PARTY-NOTICES.md` 只覆盖 33 个 R 包）
+     联动状态全局单一数据源（已由 `selection.ts` 实现）
+   - 新增合规待办：432 个 Rust/npm 依赖的许可证**部分登记**于
+     `docs/DEPENDENCY_LICENSES.md`（本轮 5 个数据层 npm 包 + 8 个壳依赖已列）；
+     全量清单与 C13 CI 断言仍待做（当前 `THIRD-PARTY-NOTICES.md` 只覆盖 33 个 R 包）
 5. ✅ **`packages.lock` + CI 许可证门禁**（2026-11-26 已完成，见 §7.6 / §7.7）：
    生成器、`packages.lock`、`THIRD-PARTY-NOTICES.md`、**12 项断言（含 CLA C12）**、
    GitHub Actions 工作流全部落地，`npm run verify` 前置门禁全绿。

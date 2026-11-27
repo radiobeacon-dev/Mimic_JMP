@@ -11,12 +11,19 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "typecheck": "tsc --noEmit",
-    "verify:phase0": "cd spike && npm run verify"
+    "verify:phase0": "cd spike && npm run verify",
+    "test:selection": "node spike/scripts/test_selection.mjs",
+    "test:demo": "node spike/scripts/test_demo_ssr.mjs",
+    "verify:s5": "node spike/scripts/s5_linked_brushing.mjs",
+    "verify:all": "npm run typecheck && npm run build && npm run verify:phase0 && npm run test:selection && npm run test:demo && npm run verify:s5"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.32.0",
     "@tauri-apps/api": "^2.12.5",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "vega-embed": "^7.4.0",
+    "vega-lite": "^6.5.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.6",

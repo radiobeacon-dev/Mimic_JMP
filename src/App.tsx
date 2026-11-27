@@ -2,11 +2,12 @@
 import { useEffect, useState } from 'react';
 import { fetchAppInfo, isTauriRuntime, type AppInfo } from './lib/tauri';
 import { probeRuntime, type RuntimeCapabilities } from './lib/capabilities';
+import LinkedBrushingDemo from './components/LinkedBrushingDemo';
 
 const MODULES = [
   { name: '数据表 / 导入', phase: 'Phase 1', desc: 'CSV / XLSX / Parquet → DuckDB-Wasm', state: '待实现' },
   { name: 'Graph Builder', phase: 'Phase 1', desc: '拖拽变量槽位 → Vega-Lite 即时出图', state: '待实现' },
-  { name: 'Linked Brushing', phase: 'Phase 1', desc: '全局单一 selection store，跨视图联动', state: '待实现' },
+  { name: 'Linked Brushing', phase: 'Phase 1', desc: '全局单一 selection store，跨视图联动', state: '内核已验证' },
   { name: 'Distribution / Fit Y by X', phase: 'Phase 1', desc: '描述统计、t 检验、ANOVA、卡方', state: '待实现' },
   { name: 'Profiler（单响应）', phase: 'Phase 1', desc: 'lm() 拟合后拖滑块看预测响应', state: '待实现' },
   { name: '.mjmp 单文件', phase: 'Phase 1', desc: 'ZIP 容器：数据 + 分析规格 + 结果 + 布局', state: '待实现' },
@@ -60,7 +61,7 @@ export default function App() {
           <p className="subtitle">面向制造业 / 研发工程师的 DOE + 质量工程交互分析工具</p>
         </div>
         <div className="header-tags">
-          <span className="tag">Phase 1 · 骨架</span>
+          <span className="tag">Phase 1 · 联动内核</span>
           <span className="tag accent">AGPL-3.0-or-later</span>
         </div>
       </header>
@@ -99,14 +100,17 @@ export default function App() {
               <Row label="最小 WASM 模块编译" value={caps.wasmCompileMs === null ? '不可用' : `${caps.wasmCompileMs} ms`} />
               <Row label="WebView2 (UA 提示)" value={caps.webView2Hint ? 'Chromium/Edge 内核' : '未检出（浏览器预览时正常）'} />
               <p className="hint">
-                这是能力探测，不是 S5 验收。S5 需接入 DuckDB-Wasm + Vega-Lite 后，
-                实测 100 万行框选全视图刷新 &lt; 100ms。
+                这是能力探测，不是 S5 验收。S5 已在 Node / DuckDB-Wasm 侧实测
+                （100 万行 · 3 视图 · p95 50.8ms &lt; 100ms）；但真实 WebView2 窗口内的
+                实测仍需补齐 MSVC Build Tools 后进行，不能直接把桌面性能当作已验证。
               </p>
             </>
           ) : (
             <p className="hint">探测中…</p>
           )}
         </section>
+
+        <LinkedBrushingDemo />
 
         <section className="card wide">
           <h2>环境阻塞项</h2>
@@ -141,7 +145,7 @@ export default function App() {
                   <td>{m.name}</td>
                   <td>{m.phase}</td>
                   <td>{m.desc}</td>
-                  <td><span className={m.state === '依赖已验证' ? 'badge ok' : 'badge'}>{m.state}</span></td>
+                  <td><span className={m.state.includes('验证') ? 'badge ok' : 'badge'}>{m.state}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -151,7 +155,7 @@ export default function App() {
 
       <footer className="footer">
         <span>项目自有代码 AGPL-3.0-or-later；随包分发的 R 组件见 spike/THIRD-PARTY-NOTICES.md</span>
-        <span>Phase 0：S1/S2/S3/S4/S6 全 GO · 39 项检查</span>
+        <span>Phase 0：S1/S2/S3/S4/S6 全 GO · 39 项检查 · S5 已实测 GO（p95 50.8ms）</span>
       </footer>
     </div>
   );
